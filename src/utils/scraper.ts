@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer";
+import { isAllowedScrapping } from "./isAllowedScraping";
 
 /**
  * Scrapes a given URL and extracts data.
@@ -8,27 +9,39 @@ import puppeteer from "puppeteer";
 */
 
 export async function scrapeData(baseUrl: string, visited = new Set<string>()) {
+
+    // Check if the URL is allowed to be scraped.
+    const isAllowed = await isAllowedScrapping(baseUrl);
+
+    // If not allowed, return a message.
+    if (!isAllowed) {
+        return "Not allowed to scrape this website.";
+    }
+
+    // Launch a headless browser.
     const browser = await puppeteer.launch({
         headless: true,   // Ensure headless mode for server environments.
         args: ["--no-sandbox", "--disable-setuid-sandbox"],    // Add flags for server compatibility.
     });
 
-    const page = await browser.newPage();
+    const page = await browser.newPage();   // Create a new page.
 
     try {
+        // Initialize an array to store URLs to visit.
         const urlsToVisit = [baseUrl];
         const sitemap = new Set();    // To store unique links within same domain.
 
+        // While there are URLs to visit.
         while (urlsToVisit.length > 0) {
+            // Get the next URL to visit.
             const currentUrl = urlsToVisit.pop();
-            console.log(currentUrl);
 
-            if (!currentUrl) break;
+            if (!currentUrl) break;     // Exit if no URL is found.
 
             // Check if the URL has already been visited.
             if (visited.has(currentUrl)) continue;
 
-            visited.add(currentUrl);
+            visited.add(currentUrl);    // Mark as visited.
 
             // Navigate to current URL.
             await page.goto(currentUrl, { waitUntil: "networkidle2" });
