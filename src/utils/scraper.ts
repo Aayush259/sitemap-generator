@@ -15,7 +15,7 @@ export async function scrapeData(baseUrl: string, visited = new Set<string>()) {
 
     // If not allowed, return a message.
     if (!isAllowed) {
-        return "Not allowed to scrape this website.";
+        return false;
     }
 
     // Launch a headless browser.

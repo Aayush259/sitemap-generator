@@ -14,6 +14,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     try {
         const data = await scrapeData(url);
+
+        if (!data) {
+            return res.status(403).json({ success: false, message: "Not allowed to scrape this website." });
+        }
+
         return res.status(200).json({ success: true, data });
     } catch (error) {
         console.log(error);
