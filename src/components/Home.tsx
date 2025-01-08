@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useActionState, useEffect, useState } from "react";
 import { FaArrowRight } from "react-icons/fa6";
 import UrlRow from "./UrlRow";
+import { generateSitemapXML } from "@/lib/funcs";
 
 export default function Home() {
 
@@ -58,11 +59,35 @@ export default function Home() {
 
                 <div className="min-w-[620px] w-[620px] max-w-[95vw] mx-auto my-8 px-4">
                     {
-                        sitemapLinks.length > 0 && <p className="text-xl mb-2 font-semibold">{"URL:"}</p>
+                        sitemapLinks.length > 0 && <p className="text-xl mb-2 font-semibold">{"Sitemap:"}</p>
+                    }
+
+                    {
+                        sitemapLinks.length > 0 && (
+                            <div className="grid [grid-template-columns:60%_30%_10%] font-semibold border border-neutral-400">
+                                <p className="duration-300 flex items-center w-full h-full p-2 border-r border-neutral-400 hover:opacity-80">
+                                    {"Url"}
+                                </p>
+
+                                <span className="p-2 border-r border-neutral-400 flex items-center w-full h-full">
+                                    {"Last Mod"}
+                                </span>
+
+                                <span className="p-2 flex items-center justify-center w-full h-full">
+                                    {"Priority"}
+                                </span>
+                            </div>
+                        )
                     }
 
                     {
                         sitemapLinks.map((link, index) => <UrlRow key={index} link={link} />)
+                    }
+
+                    {
+                        sitemapLinks.length > 0 && <button className="block ml-auto my-4 px-4 py-1 bg-blue-600 hover:opacity-80 duration-300 rounded-md" onClick={() => generateSitemapXML(sitemapLinks)}>
+                            {"Save"}
+                        </button>
                     }
                 </div>
 
