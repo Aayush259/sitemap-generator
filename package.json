@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "install-chrome": "apt-get install -y chromium-browser",
+    "install-chrome": "npm install puppeteer-core",
     "vercel-build": "npm run install-chrome && next build"
   },
   "dependencies": {
