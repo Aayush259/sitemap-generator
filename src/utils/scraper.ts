@@ -46,7 +46,7 @@ export default async function scrapeData(previousState: unknown, formData: FormD
     try {
         // Initialize an array to store URLs to visit.
         const urlsToVisit = [baseUrl];
-        const sitemap = new Set();    // To store unique links within same domain.
+        const sitemap = new Map<string, boolean>();    // To store unique links within same domain.
 
         // While there are URLs to visit.
         while (urlsToVisit.length > 0) {
@@ -60,8 +60,22 @@ export default async function scrapeData(previousState: unknown, formData: FormD
 
             visited.add(currentUrl);    // Mark as visited.
 
-            // Navigate to current URL.
-            await page.goto(currentUrl, { waitUntil: "networkidle2" });
+            try {
+                // Navigate to current URL and capture the response.
+                const response = await page.goto(currentUrl, { waitUntil: "networkidle2" });
+
+                // Check the HTTP status code to determine if the link is broken.
+                if (!response || response.status() >= 400) {
+                    sitemap.set(currentUrl, true); // Mark as broken if status is 400 or higher.
+                    continue;
+                }
+
+                sitemap.set(currentUrl, false);     // URL is not broken.
+            } catch (error) {
+                // If an error occurs, mark the URL as broken.
+                sitemap.set(currentUrl, true);
+                continue;
+            };
 
             // Extract all links on the current page.
             const links = await page.evaluate(() =>
@@ -76,13 +90,12 @@ export default async function scrapeData(previousState: unknown, formData: FormD
                 if (!visited.has(cleanLink)) {
                     urlsToVisit.push(cleanLink);
                 }
-                sitemap.add(cleanLink);
             }
         }
 
         return {
             success: true,
-            sitemap: Array.from(sitemap),
+            sitemap: Array.from(sitemap.entries()).map(([url, broken]) => ({ url, broken })),
             fieldData: {
                 url: baseUrl,
             }
