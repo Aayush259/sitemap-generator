@@ -12,6 +12,15 @@ export default {
                 background: "var(--background)",
                 foreground: "var(--foreground)",
             },
+            keyframes: {
+                "progress-bar": {
+                    "0%": { width: "0%", left: "-100%" },
+                    "100%": { width: "100%", left: "100%" },
+                },
+            },
+            animation: {
+                "progress-bar": "progress-bar 2s linear infinite",
+            }
         },
     },
     plugins: [],
