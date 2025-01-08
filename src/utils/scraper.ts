@@ -1,5 +1,5 @@
 "use server";
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
 import { isAllowedScrapping } from "./isAllowedScraping";
 import calculatePriority from "./calculatePriority";
 
@@ -38,6 +38,7 @@ export default async function scrapeData(previousState: unknown, formData: FormD
 
     // Launch a headless browser.
     const browser = await puppeteer.launch({
+        executablePath: process.env.CHROME_BIN || "/usr/bin/chromium-browser",
         headless: true,   // Ensure headless mode for server environments.
         args: ["--no-sandbox", "--disable-setuid-sandbox"],    // Add flags for server compatibility.
     });

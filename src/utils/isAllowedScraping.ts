@@ -1,10 +1,13 @@
 "use server";
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
 
 export async function isAllowedScrapping(baseUrl: string) {
 
     // Launch a headless browser.
-    const browser = await puppeteer.launch({ headless: true });
+    const browser = await puppeteer.launch({
+        executablePath: process.env.CHROME_BIN || "/usr/bin/chromium-browser",
+        headless: true
+    });
     const page = await browser.newPage();   // Create a new page.
     await page.setUserAgent(
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
@@ -13,7 +16,7 @@ export async function isAllowedScrapping(baseUrl: string) {
     try {
         // Navigate to the robots.txt file.
         const robotsUrl = new URL("/robots.txt", baseUrl).href;
-        
+
         await page.goto(robotsUrl, { waitUntil: "networkidle2" });
 
         // Extract the content of the robots.txt file.
