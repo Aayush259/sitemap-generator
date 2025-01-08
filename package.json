@@ -7,8 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "vercel-build": "npm run install-chrome && next build",
-    "install-chrome": "apt-get update && apt-get install -y wget ca-certificates fonts-liberation libappindicator3-1 libnss3 libxss1 libxtst6 libx11-xcb1 libgbm1 libasound2"
+    "install-chrome": "apt-get install -y chromium-browser",
+    "vercel-build": "npm run install-chrome && next build"
   },
   "dependencies": {
     "next": "15.1.3",
