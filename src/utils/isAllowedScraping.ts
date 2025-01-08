@@ -1,3 +1,4 @@
+"use server";
 import puppeteer from "puppeteer";
 
 export async function isAllowedScrapping(baseUrl: string) {

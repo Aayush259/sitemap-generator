@@ -1,21 +1,38 @@
+"use server";
 import puppeteer from "puppeteer";
 import { isAllowedScrapping } from "./isAllowedScraping";
 
-/**
- * Scrapes a given URL and extracts data.
- * @param {string} baseUrl - The URL to scrape.
- * @param {Set<string>} visited - A set of already visited URLs to avoid duplicates.
- * @returns {Object} - The scraped data.
-*/
+export default async function scrapeData(previousState: unknown, formData: FormData) {
 
-export async function scrapeData(baseUrl: string, visited = new Set<string>()) {
+    // Extract the URL from the form data.
+    const baseUrl = formData.get("url") as string;
+
+    // Validate the URL.
+    if (!baseUrl) {
+        return {
+            success: false,
+            message: "URL is required",
+            fieldData: {
+                url: baseUrl,
+            }
+        };
+    }
+
+    // Create a set to keep track of visited URLs.
+    const visited = new Set<string>();
 
     // Check if the URL is allowed to be scraped.
     const isAllowed = await isAllowedScrapping(baseUrl);
 
     // If not allowed, return a message.
     if (!isAllowed) {
-        return false;
+        return {
+            success: false,
+            message: "Not allowed to scrape this website.",
+            fieldData: {
+                url: baseUrl,
+            }
+        };
     }
 
     // Launch a headless browser.
@@ -63,10 +80,22 @@ export async function scrapeData(baseUrl: string, visited = new Set<string>()) {
             }
         }
 
-        return Array.from(sitemap);
+        return {
+            success: true,
+            sitemap: Array.from(sitemap),
+            fieldData: {
+                url: baseUrl,
+            }
+        };
     } catch (error) {
         console.log("Error scraping data:", error);
-        return null;
+        return {
+            success: false,
+            message: "An error occurred while scraping data.",
+            fieldData: {
+                url: baseUrl,
+            }
+        };
     } finally {
         await browser.close();
     }
