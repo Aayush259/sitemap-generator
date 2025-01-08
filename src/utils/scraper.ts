@@ -1,6 +1,7 @@
 "use server";
 import puppeteer from "puppeteer";
 import { isAllowedScrapping } from "./isAllowedScraping";
+import calculatePriority from "./calculatePriority";
 
 export default async function scrapeData(previousState: unknown, formData: FormData) {
 
@@ -19,7 +20,7 @@ export default async function scrapeData(previousState: unknown, formData: FormD
     }
 
     // Create a set to keep track of visited URLs.
-    const visited = new Set<string>();
+    const visited = new Map<string, number>();
 
     // Check if the URL is allowed to be scraped.
     const isAllowed = await isAllowedScrapping(baseUrl);
@@ -45,35 +46,42 @@ export default async function scrapeData(previousState: unknown, formData: FormD
 
     try {
         // Initialize an array to store URLs to visit.
-        const urlsToVisit = [baseUrl];
-        const sitemap = new Map<string, boolean>();    // To store unique links within same domain.
+        const urlsToVisit: { url: string; depth: number }[] = [{ url: baseUrl, depth: 0 }];
+        const sitemap = new Map<string, { broken: boolean; priority: number; lastmod: string }>();    // To store unique links within same domain.
 
         // While there are URLs to visit.
         while (urlsToVisit.length > 0) {
             // Get the next URL to visit.
-            const currentUrl = urlsToVisit.pop();
-
-            if (!currentUrl) break;     // Exit if no URL is found.
+            const { url: currentUrl, depth } = urlsToVisit.pop()!;
 
             // Check if the URL has already been visited.
-            if (visited.has(currentUrl)) continue;
+            if (visited.has(currentUrl) && visited.get(currentUrl)! <= depth) continue;
 
-            visited.add(currentUrl);    // Mark as visited.
+            visited.set(currentUrl, depth);    // Mark as visited.
+            const priority = await calculatePriority(currentUrl);
 
             try {
                 // Navigate to current URL and capture the response.
                 const response = await page.goto(currentUrl, { waitUntil: "networkidle2" });
 
                 // Check the HTTP status code to determine if the link is broken.
-                if (!response || response.status() >= 400) {
-                    sitemap.set(currentUrl, true); // Mark as broken if status is 400 or higher.
-                    continue;
-                }
+                const isBroken = !response || response.status() >= 400;
 
-                sitemap.set(currentUrl, false);     // URL is not broken.
+                // Add the URL to the sitemap with its attributes.
+                sitemap.set(currentUrl, {
+                    broken: isBroken,
+                    priority: priority,
+                    lastmod: new Date().toISOString(), // Use current date as last modified.
+                });
+
+                if (isBroken) continue;
             } catch (error) {
-                // If an error occurs, mark the URL as broken.
-                sitemap.set(currentUrl, true);
+                // Mark as broken if an error occurs during navigation.
+                sitemap.set(currentUrl, {
+                    broken: true,
+                    priority: priority,
+                    lastmod: new Date().toISOString(),
+                });
                 continue;
             };
 
@@ -84,18 +92,19 @@ export default async function scrapeData(previousState: unknown, formData: FormD
                     .filter(href => href.startsWith(location.origin))
             );
 
-            // Add unvisited links to the queue.
+            // Add unvisited links to the queue with incremented depth.
             for (const link of links) {
                 const cleanLink = link.split("#")[0]; // Remove anchors.
                 if (!visited.has(cleanLink)) {
-                    urlsToVisit.push(cleanLink);
+                    const priority = await calculatePriority(cleanLink);
+                    urlsToVisit.push({ url: cleanLink, depth: priority });
                 }
             }
         }
 
         return {
             success: true,
-            sitemap: Array.from(sitemap.entries()).map(([url, broken]) => ({ url, broken })),
+            sitemap: Array.from(sitemap.entries()).map(([url, data]) => ({ url, data })),
             fieldData: {
                 url: baseUrl,
             }
