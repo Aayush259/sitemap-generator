@@ -19,7 +19,7 @@ export default {
                 },
             },
             animation: {
-                "progress-bar": "progress-bar 2s linear infinite",
+                "progress-bar": "progress-bar 0.8s linear infinite",
             }
         },
     },

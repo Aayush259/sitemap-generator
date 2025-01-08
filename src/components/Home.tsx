@@ -1,16 +1,23 @@
 "use client";
+import { ISitemapLink } from "@/lib/interfaces";
 import scrapeData from "@/utils/scraper";
 import Link from "next/link";
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { FaArrowRight } from "react-icons/fa6";
+import UrlRow from "./UrlRow";
 
 export default function Home() {
 
     const [data, action, isPending] = useActionState(scrapeData, null);
 
+    const [sitemapLinks, setSitemapLinks] = useState<ISitemapLink[]>([]);
+    const [brokenLinks, setBrokenLinks] = useState<ISitemapLink[]>([]);
+
     useEffect(() => {
-        if (data?.success) {
+        if (data?.success && data?.sitemap) {
             console.log(data);
+            setSitemapLinks(data.sitemap.filter(link => !link.data.broken));
+            setBrokenLinks(data.sitemap.filter(link => link.data.broken));
         } else {
             console.log(data);
         }
@@ -44,23 +51,31 @@ export default function Home() {
                 </button>
             </form>
 
-            {
-                isPending && <div className="w-[400px] max-w-[85vw] h-2 mx-auto my-10 bg-white/10 rounded-full relative overflow-hidden before:absolute before:top-0 before:h-full before:bg-blue-600 before:rounded-full before:animate-progress-bar" />
-            }
+            <div className="w-[620px] max-w-[95vw] mx-auto overflow-auto">
+                {
+                    isPending && <div className="w-[400px] max-w-[85vw] h-2 mx-auto my-10 bg-white/10 rounded-full relative overflow-hidden before:absolute before:top-0 before:h-full before:bg-blue-600 before:rounded-full before:animate-progress-bar" />
+                }
 
-            {
-                data?.sitemap && (
-                    <div className="w-[600px] max-w-[95vw] mx-auto my-8">
-                        {
-                            data.sitemap.map((link, index) => (
-                                <Link href={link as string} target="_blank" key={index} className="block my-1 text-sm underline underline-offset-4 hover:no-underline duration-300 hover:opacity-80">
-                                    {link as string}
-                                </Link>
-                            ))
-                        }
-                    </div>
-                )
-            }
+                <div className="min-w-[620px] w-[620px] max-w-[95vw] mx-auto my-8 px-4">
+                    {
+                        sitemapLinks.length > 0 && <p className="text-xl mb-2 font-semibold">{"URL:"}</p>
+                    }
+
+                    {
+                        sitemapLinks.map((link, index) => <UrlRow key={index} link={link} />)
+                    }
+                </div>
+
+                <div className="min-w-[620px] w-[620px] max-w-[95vw] mx-auto my-8 px-4">
+                    {
+                        brokenLinks.length > 0 && <p className="text-xl mb-2 font-semibold">{"Broken Links:"}</p>
+                    }
+
+                    {
+                        brokenLinks.map((link, index) => <UrlRow key={index} link={link} />)
+                    }
+                </div>
+            </div>
         </main>
     );
 };
