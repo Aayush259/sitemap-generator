@@ -76,6 +76,8 @@ export default async function scrapeData(previousState: unknown, formData: FormD
 
                 if (isBroken) continue;
             } catch (error) {
+                console.log(error);
+
                 // Mark as broken if an error occurs during navigation.
                 sitemap.set(currentUrl, {
                     broken: true,

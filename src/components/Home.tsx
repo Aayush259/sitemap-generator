@@ -1,7 +1,6 @@
 "use client";
 import { ISitemapLink } from "@/lib/interfaces";
 import scrapeData from "@/utils/scraper";
-import Link from "next/link";
 import { useActionState, useEffect, useState } from "react";
 import { FaArrowRight } from "react-icons/fa6";
 import UrlRow from "./UrlRow";
