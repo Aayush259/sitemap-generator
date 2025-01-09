@@ -6,11 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "install-chrome": "npm install puppeteer-core",
-    "vercel-build": "npm run install-chrome && next build"
+    "lint": "next lint"
   },
   "dependencies": {
+    "@sparticuz/chromium-min": "^131.0.1",
     "next": "15.1.3",
     "puppeteer": "^23.11.1",
     "puppeteer-core": "^23.11.1",

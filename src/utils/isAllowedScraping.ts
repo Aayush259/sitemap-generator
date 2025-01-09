@@ -1,13 +1,27 @@
 "use server";
-import puppeteer from "puppeteer-core";
+import chromium from '@sparticuz/chromium-min';
+import puppeteer, { type Browser } from 'puppeteer';
+import puppeteerCore, { type Browser as BrowserCore } from 'puppeteer-core';
 
 export async function isAllowedScrapping(baseUrl: string) {
 
-    // Launch a headless browser.
-    const browser = await puppeteer.launch({
-        executablePath: process.env.CHROME_BIN || "/usr/bin/chromium-browser",
-        headless: true
-    });
+    let browser: Browser | BrowserCore;
+
+    if (process.env.ENVIRONMENT === 'production') {
+        const executablePath = await chromium.executablePath('https://github.com/Sparticuz/chromium/releases/download/v131.0.1/chromium-v131.0.1-pack.tar')
+        browser = await puppeteerCore.launch({
+            executablePath,
+            args: chromium.args,
+            headless: chromium.headless,
+            defaultViewport: chromium.defaultViewport,
+        })
+    } else {
+        browser = await puppeteer.launch({
+            headless: true,
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
+        })
+    }
+
     const page = await browser.newPage();   // Create a new page.
     await page.setUserAgent(
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
@@ -20,7 +34,9 @@ export async function isAllowedScrapping(baseUrl: string) {
         await page.goto(robotsUrl, { waitUntil: "networkidle2" });
 
         // Extract the content of the robots.txt file.
-        const robotsTxt = await page.evaluate(() => document.body.innerText);
+        const robotsTxt = await (page.evaluate as unknown as <T>(fn: () => T) => Promise<T>)(() => {
+            return document.body?.innerText || '';
+        });
         await browser.close();  // Close the browser.
 
         // Parse the robots.txt content.
@@ -36,7 +52,7 @@ export async function isAllowedScrapping(baseUrl: string) {
             } else if (appliesToUserAgent && trimmedLine.startsWith("Disallow:")) {
                 console.log(trimmedLine);
                 const disallowedPath = trimmedLine.split(":")[1]?.trim();
-                if (baseUrl.includes(disallowedPath)) {
+                if (disallowedPath && baseUrl.includes(disallowedPath)) {
                     isAllowed = false;
                     break;
                 }

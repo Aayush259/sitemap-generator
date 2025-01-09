@@ -1,5 +1,7 @@
 "use server";
-import puppeteer from "puppeteer-core";
+import chromium from '@sparticuz/chromium-min';
+import puppeteer, { type Browser } from 'puppeteer';
+import puppeteerCore, { type Browser as BrowserCore } from 'puppeteer-core';
 import { isAllowedScrapping } from "./isAllowedScraping";
 import calculatePriority from "./calculatePriority";
 
@@ -36,12 +38,22 @@ export default async function scrapeData(previousState: unknown, formData: FormD
         };
     }
 
-    // Launch a headless browser.
-    const browser = await puppeteer.launch({
-        executablePath: process.env.CHROME_BIN || "/usr/bin/chromium-browser",
-        headless: true,   // Ensure headless mode for server environments.
-        args: ["--no-sandbox", "--disable-setuid-sandbox"],    // Add flags for server compatibility.
-    });
+    let browser: Browser | BrowserCore;
+
+    if (process.env.ENVIRONMENT === 'production') {
+        const executablePath = await chromium.executablePath('https://github.com/Sparticuz/chromium/releases/download/v131.0.1/chromium-v131.0.1-pack.tar')
+        browser = await puppeteerCore.launch({
+            executablePath,
+            args: chromium.args,
+            headless: chromium.headless,
+            defaultViewport: chromium.defaultViewport,
+        })
+    } else {
+        browser = await puppeteer.launch({
+            headless: true,
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
+        })
+    }
 
     const page = await browser.newPage();   // Create a new page.
 
@@ -89,7 +101,7 @@ export default async function scrapeData(previousState: unknown, formData: FormD
             };
 
             // Extract all links on the current page.
-            const links = await page.evaluate(() =>
+            const links = await (page.evaluate as unknown as <T>(fn: () => T) => Promise<T>)(() =>
                 Array.from(document.querySelectorAll("a"))
                     .map(link => link.href)
                     .filter(href => href.startsWith(location.origin))
